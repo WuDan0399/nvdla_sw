@@ -879,7 +879,6 @@ namespace canonical_ast
     Graph* generateGraph(Network *);
     DataType getDataType(const char *);
     DataFormat getDataFormate(const char *);
-    int getDims2FromValue(const rapidjson::Value& , std::vector<Dims2 *> );
     LayerType gettypeFromJson(rapidjson::Value::ConstMemberIterator);
     Node * newCanonicalNodeFromJson(rapidjson::Value::ConstMemberIterator);
     Node *newCanonicalNode(Layer* orig_nw_layer);

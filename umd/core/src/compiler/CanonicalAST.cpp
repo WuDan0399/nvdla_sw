@@ -29,6 +29,7 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <stdlib.h>
 
 #include "priv/Check.h"
 
@@ -86,23 +87,6 @@ DataFormat canonical_ast::getDataFormate(const char * name){
     }
 fail:
     return e;
-}
-
-int canonical_ast::getDims2FromValue(const rapidjson::Value& a, vector<Dims2 *> b)
-{
-    // I need an assert to identify whether size of a is 2*n
-    for (rapidjson::SizeType i = 0; i < a.Size()/2; i++) // Uses SizeType instead of size_t
-    {
-        NvS32 s, t;
-        std::stringstream strValue;
-        strValue << a[2*i].GetString();
-        strValue >> s;
-        b[i]->h = s;
-        strValue << a[2*i+1].GetString();
-        strValue >> t;
-        b[i]->w = t;
-    }
-    return 0;
 }
 
 LayerType canonical_ast::gettypeFromJson(rapidjson::Value::ConstMemberIterator itr){
@@ -1135,31 +1119,30 @@ canonical_ast::ConvolutionNode* canonical_ast::NodeFactory::newConvNodeFromJson(
 
     Dims4 weightDims, biasDims;
 
-    // set padding 
-    Dims2 TL(1,1), BR(1,1);
-    vector<Dims2*> padding = {&TL, &BR};
-    // canonical_ast::getDims2FromValue(itr->value.GetObject()["padding"][0], padding);
+    // set padding  
+    Dims2 TL(atoi(itr->value.GetObject()["padding"][0][0].GetString()), atoi(itr->value.GetObject()["padding"][0][1].GetString()));
+    Dims2 BR(atoi(itr->value.GetObject()["padding"][0][2].GetString()), atoi(itr->value.GetObject()["padding"][0][3].GetString()));
+    
     d->params().setTopLeftPadding(TL);
     d->params().setBottomRightPadding(BR);
     d->params().setPaddingValue(0);
 
     // set stride
-    Dims2 singleStride(1,1);
-    // vector<Dims2*> Strides= {&singleStride};
-    // canonical_ast::getDims2FromValue( itr->value.GetObject()["strides"][0], Strides);
+    Dims2 singleStride(atoi(itr->value.GetObject()["strides"][0][0].GetString()), atoi(itr->value.GetObject()["strides"][0][1].GetString()));
     d->params().setStride(singleStride);
-    
-    d->params().setDilation(Dims2(1, 1));
+
+    // set dilation
+    Dims2 dilation(atoi(itr->value.GetObject()["dilation"][0][0].GetString()), atoi(itr->value.GetObject()["dilation"][0][1].GetString()));
+    d->params().setDilation(dilation);
 
     // weight loading
     NvS64 weightsize = itr->value.GetObject()["weights"].GetArray().Size();
-    int offset=100000;
-    vector<NvF32> m_weight(weightsize+offset*2);
+    NvF32* m_weight = new NvF32[weightsize];
     for(NvS64 i = 0; i < weightsize; i++){
         NvF32 value = itr->value.GetObject()["weights"][i].GetFloat();
-        m_weight[i+offset] = value;
+        m_weight[i] = value;
     }
-    d->params().setWeights(Weights(DataType::FLOAT, (m_weight.data()+offset), weightsize));
+    d->params().setWeights(Weights(DataType::FLOAT, m_weight, weightsize));
     d->params().setNumGroups(1);
 
     weightDims.n = itr->value.GetObject()["weight_shape"][0].GetInt();
@@ -1172,12 +1155,12 @@ canonical_ast::ConvolutionNode* canonical_ast::NodeFactory::newConvNodeFromJson(
     if (itr->value.GetObject().HasMember("bias_info")){
         d->params().setHasBiasTerm(true);
         NvS64 biasSize = itr->value.GetObject()["bias_info"]["bias"].GetArray().Size();
-        vector<NvF32> m_bias(biasSize+2*offset);
+        NvF32* m_bias = new NvF32[biasSize];
         for(NvS64 i = 0; i < biasSize; i++){
             NvF32 value = itr->value.GetObject()["bias_info"]["bias"][i].GetFloat();
-            m_bias[i+offset] = value;
+            m_bias[i] = value;
         }
-        d->params().setBiasData(Weights(DataType::FLOAT, (m_bias.data()+offset), biasSize));
+        d->params().setBiasData(Weights(DataType::FLOAT, m_bias, biasSize));
     
         switch (itr->value.GetObject()["bias_info"]["bias_shape"].GetArray().Size())
         {
@@ -1225,12 +1208,11 @@ canonical_ast::FullyConnectedNode* canonical_ast::NodeFactory::newFCNodeFromJson
 
     // Weights
     NvS64 weightsize = itr->value.GetObject()["weights"].GetArray().Size();
-    int offset=100000;
-    vector<NvF32> m_weight(weightsize+2*offset);
+    NvF32* m_weight = new NvF32[weightsize];
     for(NvS64 i = 0; i < weightsize; i++){
-        m_weight[i+offset]=itr->value.GetObject()["weights"][i].GetFloat();
+        m_weight[i]=itr->value.GetObject()["weights"][i].GetFloat();
     }
-    d->params().setWeights(Weights(DataType::FLOAT, (m_weight.data()+offset), weightsize));
+    d->params().setWeights(Weights(DataType::FLOAT, m_weight, weightsize));
     switch(itr->value.GetObject()["weight_shape"].GetArray().Size()){
         case 2:
             weightDims.n = itr->value.GetObject()["weight_shape"][0].GetInt();
@@ -1254,12 +1236,12 @@ canonical_ast::FullyConnectedNode* canonical_ast::NodeFactory::newFCNodeFromJson
     if (itr->value.GetObject().HasMember("bias_info")){
         d->params().setHasBiasTerm(true);
         NvS64 biasSize = itr->value.GetObject()["bias_info"]["bias"].GetArray().Size();
-        vector<NvF32> m_bias(biasSize+2*offset);
+        NvF32* m_bias = new NvF32[biasSize];
         for(NvS64 i = 0; i < biasSize; i++){
             NvF32 value = itr->value.GetObject()["bias_info"]["bias"][i].GetFloat();
-            m_bias[i+offset] = value;
+            m_bias[i] = value;
         }
-        d->params().setBiasData(Weights(DataType::FLOAT, (m_bias.data()+offset), biasSize));
+        d->params().setBiasData(Weights(DataType::FLOAT, m_bias, biasSize));
     
         switch (itr->value.GetObject()["bias_info"]["bias_shape"].GetArray().Size())
         {
@@ -1372,22 +1354,18 @@ canonical_ast::PoolingNode* canonical_ast::NodeFactory::newPoolingNodeFromJson(r
 
     // Padding 
     //currently padding is [["0" , "0", "0", "0"]]
-    Dims2 TL(0,0), BR(0,0);
-    vector<Dims2*> padding = {&TL, &BR};
-    canonical_ast::getDims2FromValue(itr->value.GetObject()["padding"][0], padding);
+    Dims2 TL(atoi(itr->value.GetObject()["padding"][0][0].GetString()), atoi(itr->value.GetObject()["padding"][0][1].GetString()));
+    Dims2 BR(atoi(itr->value.GetObject()["padding"][0][2].GetString()), atoi(itr->value.GetObject()["padding"][0][3].GetString()));
+
     d->params().setTopLeftPadding(TL);
     d->params().setBottomRightPadding(BR);
 
     // Kernel Dimensions
-    Dims2 singleKernel(0,0);
-    vector<Dims2*> Kernels= {&singleKernel};
-    canonical_ast::getDims2FromValue( itr->value.GetObject()["pool_size"][0], Kernels);
+    Dims2 singleKernel(atoi(itr->value.GetObject()["pool_size"][0][0].GetString()), atoi(itr->value.GetObject()["pool_size"][0][1].GetString()));
     d->params().setKernelDims(singleKernel);
 
     //Stride 
-    Dims2 singleStride(0,0);
-    vector<Dims2*> Strides= {&singleStride};
-    canonical_ast::getDims2FromValue( itr->value.GetObject()["strides"][0], Strides);
+    Dims2 singleStride(atoi(itr->value.GetObject()["strides"][0][0].GetString()), atoi(itr->value.GetObject()["strides"][0][1].GetString()));
     d->params().setStride(singleStride);
     
     s_pool_priv.insert(std::pair<B, D>(b, d));
