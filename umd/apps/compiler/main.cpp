@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 {
     NvDlaError e = NvDlaError_TestApplicationFailed;
     TestAppArgs testAppArgs = defaultTestAppArgs;
-    NvDlaDebugPrintf("before parsing argv \"%s\" \n", testAppArgs.profileName.c_str());
+//     NvDlaDebugPrintf("before parsing argv \"%s\" \n", testAppArgs.profileName.c_str());
     bool showHelp = false;
     bool unknownArg = false;
     bool missingArg = false;
@@ -372,10 +372,18 @@ int main(int argc, char* argv[])
 
         ii++;
     }
-    NvDlaDebugPrintf("after parsing argv \"%s\" \n", testAppArgs.profileName.c_str());
-    if (std::strcmp(testAppArgs.prototxt.c_str(), "") == 0 || std::strcmp(testAppArgs.caffemodel.c_str(), "") == 0) {
-        missingArg = true;
-        showHelp = true;
+    
+// editted by yujie
+    if (std::strcmp(testAppArgs.json_file.c_str(), "") == 0){
+        if (std::strcmp(testAppArgs.prototxt.c_str(), "") == 0 || std::strcmp(testAppArgs.caffemodel.c_str(), "") == 0) {
+            missingArg = true;
+            showHelp = true;
+        }
+    }else{
+        if (std::strcmp(testAppArgs.prototxt.c_str(), "") != 0 || std::strcmp(testAppArgs.caffemodel.c_str(), "") != 0) {
+            missingArg = true;
+            showHelp = true;
+        }
     }
 
     if (showHelp)
@@ -385,6 +393,7 @@ int main(int argc, char* argv[])
         NvDlaDebugPrintf("    -h                                                          print this help message\n");
         NvDlaDebugPrintf("    -o <outputpath>                                             outputs wisdom files in 'outputpath' directory\n");
         NvDlaDebugPrintf("    --profile <basic|default|performance|fast-math>             computation profile (default: fast-math)\n");
+        NvDlaDebugPrintf("    --json_file                                                     json file from TVM\n");
         NvDlaDebugPrintf("    --cprecision <fp16|int8>                                    compute precision (default: int8)\n");
         NvDlaDebugPrintf("    --configtarget <opendla-full|opendla-large|opendla-small>   target platform (default: nv_full)\n");
         NvDlaDebugPrintf("    --calibtable <int8 calib file>                              calibration table for INT8 networks (default: 0.00787)\n");
