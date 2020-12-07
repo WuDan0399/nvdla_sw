@@ -469,21 +469,35 @@ NvDlaError Compiler::compileInternal(Profile *profile, TargetConfig *target_conf
         gLogInfo << "\ttensor scaling mode " << profile->tensorScalingMode().c_str() << endl;
         gLogInfo << "\tquantization mode " << profile->quantizationMode().c_str() << endl;
     }
-
-    rapidjson::Document d;
-    FILE* fp = fopen(json_file, "r");
-    char readBuffer[65536];
-    rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer)); 
-    d.ParseStream(is);
-    fclose(fp);
-    if(d.HasParseError()){
-        ORIGINATE_ERROR_FAIL(NvDlaError_BadParameter, "Json file not exists.");
-    }    
-    can_g = canonical_ast::generateGraphFromJson(&d);
-    // can_g = canonical_ast::generateGraph(net);
-    if ( !can_g )
-    {
-        ORIGINATE_ERROR_FAIL(NvDlaError_InvalidState, "failed to create canonical graph");
+    if (std::strcmp(json_file, "") == 0){
+        // network --> canonical_graph
+        net = NetworkFactory::priv(m_wisdom->getNetwork());
+        if ( !net )
+        {
+            ORIGINATE_ERROR_FAIL(NvDlaError_InvalidState, "No network to compile.");
+        }
+        can_g = canonical_ast::generateGraph(net);
+        if ( !can_g )
+        {
+            ORIGINATE_ERROR_FAIL(NvDlaError_InvalidState, "failed to create canonical graph");
+        }
+    }else{
+        // json file --> canonical_graph
+        rapidjson::Document d;
+        FILE* fp = fopen(json_file, "r");
+        char readBuffer[65536];
+        rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer)); 
+        d.ParseStream(is);
+        fclose(fp);
+        if(d.HasParseError()){
+            ORIGINATE_ERROR_FAIL(NvDlaError_BadParameter, "Json file not exists.");
+        }    
+        can_g = canonical_ast::generateGraphFromJson(&d);
+        // can_g = canonical_ast::generateGraph(net);
+        if ( !can_g )
+        {
+            ORIGINATE_ERROR_FAIL(NvDlaError_InvalidState, "failed to create canonical graph");
+        }
     }
 
     if ( dumpCanonicalGraph )
