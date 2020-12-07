@@ -285,7 +285,7 @@ NvDlaError generateProfile(const TestAppArgs* appArgs, std::string* profileName,
 {
     NvDlaError e = NvDlaSuccess;
     nvdla::DataFormat inDataFormat = nvdla::DataFormat::UNKNOWN;
-    NvDlaDebugPrintf("before error: \"%s\" \n", appArgs->profileName.c_str());
+//     NvDlaDebugPrintf("before error: \"%s\" \n", appArgs->profileName.c_str());
     if (appArgs->profileName != "")
     {
         // init named profile (basic/default/performance) with default params in its constructor and exit
