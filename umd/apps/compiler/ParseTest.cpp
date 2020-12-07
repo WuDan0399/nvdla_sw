@@ -245,8 +245,8 @@ NvDlaError parseAndCompile(const TestAppArgs* appArgs, TestInfo* i)
     // Parse
     if (isCaffe)
         PROPAGATE_ERROR_FAIL(parseCaffeNetwork(appArgs, i));
-    else
-        ORIGINATE_ERROR_FAIL(NvDlaError_BadParameter, "Unknown network type encountered");
+//     else
+//         ORIGINATE_ERROR_FAIL(NvDlaError_BadParameter, "Unknown network type encountered");
 
     // Compile
     PROPAGATE_ERROR_FAIL(compileProfile(appArgs, i));
