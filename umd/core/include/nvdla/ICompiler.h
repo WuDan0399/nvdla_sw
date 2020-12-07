@@ -40,7 +40,7 @@ public:
     virtual IWisdom *wisdom() const = 0;
 
     virtual NvDlaError getDataType(DataType::UnderlyingType *d) const = 0;
-    virtual NvDlaError compile(const char *profile_name, const char *target_config_name, ILoadable **l, const char* json_file) = 0; // "" := default
+    virtual NvDlaError compile(const char *profile_name, const char *target_config_name, ILoadable **l, const char* json_file="") = 0; // "" := default
     virtual NvDlaError getLoadableImage(const char *profile_name, NvU8 *flatbuf) = 0;
     virtual NvDlaError getLoadableImageSize(const char *profile_name, NvU64 *size) = 0;
 
